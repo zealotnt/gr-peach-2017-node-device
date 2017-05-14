@@ -13,6 +13,8 @@
 ```bash
 # Install arduino IDE
 https://arduino.esp8266.vn/basic/install.html
+https://github.com/esp8266/Arduino#using-git-version
+
 
 # Download all the dependencies libraries
 git clone https://bitbucket.org/xoseperez/hlw8012.git
@@ -26,7 +28,14 @@ ln -s <absolute-path-to-blynk-library> .
 ln -s <absolute-path-to-WiFiManager> .
 
 # Now the example should be able to build with arduino IDE
+
+# Get espota tool
+wget https://raw.githubusercontent.com/esp8266/Arduino/master/tools/espota.py
+# Esp ota command example
+python espota.py -d -i <ip-of-esp-pow> -p 8266 -P 8266 -a admin -f <path-to-ino-bin>
 ```
+
+- Some more tips to debug with esp8266 arduino firmware: [file](./software/tips.md)
 
 [HLW8012](https://bitbucket.org/xoseperez/hlw8012)  
 

@@ -1,13 +1,8 @@
-# Hardware
-
-![Top view](./hardware/esp-pow-asem-top.jpg)  
-![Board schematic](./hardware/esp-power-schematic.png)  
-![Smart node pinout](./hardware/smart-note-pinout.png)  
-[Smart node](./hardware/smart-node.md)  
-
 # Software
 
-[Example code](./software/example-esp-pow.ino)  
+- Codes:
+    + [Example code](./software/example-esp-pow/example-esp-pow.ino)  
+    + [Node device code](./software/node-device/node-device.ino)
 
 - To be able to build the example
 ```bash
@@ -22,24 +17,41 @@ git clone git@github.com:blynkkk/blynk-library.git
 git clone git@github.com:tzapu/WiFiManager.git
 
 # and link it to arduino library
-cd ~/.arduino15/packages/esp8266/hardware/esp8266/2.3.0/libraries
+cd ~/bin/arduino-1.6.9/hardware/esp8266com/esp8266/libraries
 ln -s <absolute-path-to-hlw8012> .
 ln -s <absolute-path-to-blynk-library> .
 ln -s <absolute-path-to-WiFiManager> .
 
 # Now the example should be able to build with arduino IDE
-
-# Get espota tool
-wget https://raw.githubusercontent.com/esp8266/Arduino/master/tools/espota.py
-# Esp ota command example
-python espota.py -d -i <ip-of-esp-pow> -p 8266 -P 8266 -a admin -f <path-to-ino-bin>
 ```
+- For more infomation visit:
+    + Some more tips to debug with esp8266 arduino firmware: [tips](./software/tips.md)
+    + Node device development guides and notes: [node-device-notes](./software/node-device/node-device-notes.md)
 
-- Some more tips to debug with esp8266 arduino firmware: [file](./software/tips.md)
+- External modules and libaries:
+    + [HLW8012](https://bitbucket.org/xoseperez/hlw8012)  
+    + [Wifi Manager](https://github.com/tzapu/WiFiManager)  
 
-[HLW8012](https://bitbucket.org/xoseperez/hlw8012)  
+# Hardware
 
-[Wifi Manager](https://github.com/tzapu/WiFiManager)  
+- Top view
+![Top view](./hardware/esp-pow-asem-top.jpg "Top view")  
+
+- Board schematic
+![Board schematic](./hardware/esp-power-schematic.png "Board schematic")  
+
+- Smart node pinout: [Smart node info](./hardware/smart-node.md)  
+![Smart node pinout](./hardware/smart-note-pinout.png "Smart node pinout")  
+
+- Wiring ftdi - esp8285
+![Wiring ftdi - esp8285](./hardware/serial-wiring-1.jpg "Wiring ftdi - esp8285")  
+
+- Soldering ftdi header
+![Soldering ftdi header](./hardware/serial-wiring-2.jpg "Soldering ftdi header")  
+
+- Fix the header to board
+![Fix the header to board](./hardware/serial-wiring-3.jpg "Fix the header to board")  
+
 
 # Distributor
 

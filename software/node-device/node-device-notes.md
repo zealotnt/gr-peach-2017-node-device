@@ -28,3 +28,11 @@ E Ifce Prot Name                                          Type                 D
 : Cache exhausted
 ```
 
+# OTA
+
+```bash
+# Get espota tool
+wget https://raw.githubusercontent.com/esp8266/Arduino/master/tools/espota.py
+# Esp ota command to load firmware to esp-pow
+python espota.py -d -i <ip-of-esp-pow> -p 8266 -P 8266 -a admin -f <path-to-ino-bin>
+```

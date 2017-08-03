@@ -1,22 +1,22 @@
-#include <HLW8012.h> //https://bitbucket.org/xoseperez/hlw8012
+#include <HLW8012.h>              //https://bitbucket.org/xoseperez/hlw8012
 #include <ESP8266WiFi.h>          //https://github.com/esp8266/Arduino
 #include <ESP8266mDNS.h>
 #include <WiFiUdp.h>
 #include <ArduinoOTA.h>
 #include <ESP8266WebServer.h>
 
-#define PIN_LED 15//3
-#define PIN_BUTTON 0
-#define PIN_RELAY 12
+#define PIN_LED                         15//3
+#define PIN_BUTTON                      0
+#define PIN_RELAY                       12
 #define SEL_PIN                         5
 #define CF1_PIN                         13
 #define CF_PIN                          14
 
-#define LED_ON() digitalWrite(PIN_LED, HIGH)
-#define LED_OFF() digitalWrite(PIN_LED, LOW)
-#define LED_TOGGLE() digitalWrite(PIN_LED, digitalRead(PIN_LED) ^ 0x01)
-#define RELAY_ON() digitalWrite(PIN_RELAY, HIGH)
-#define RELAY_OFF() digitalWrite(PIN_RELAY, LOW)
+#define LED_ON()      digitalWrite(PIN_LED, HIGH)
+#define LED_OFF()     digitalWrite(PIN_LED, LOW)
+#define LED_TOGGLE()  digitalWrite(PIN_LED, digitalRead(PIN_LED) ^ 0x01)
+#define RELAY_ON()    digitalWrite(PIN_RELAY, HIGH)
+#define RELAY_OFF()   digitalWrite(PIN_RELAY, LOW)
 
 #define OTA_PASS "admin"
 #define OTA_PORT (8266)
@@ -33,8 +33,8 @@
 #define VOLTAGE_RESISTOR_DOWNSTREAM     ( 950 ) // Real 1.009k
 
 HLW8012 hlw8012;
-const char* ssid = "ThanhNienNghiemTuc";
-const char* password = "taodangchoi";
+const char* ssid      = "zealot-wifi";
+const char* password  = "pastebin309";
 ESP8266WebServer server(80);
 
 // When using interrupts we have to call the library entry point

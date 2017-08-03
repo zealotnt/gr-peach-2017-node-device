@@ -7,6 +7,30 @@ CPU Frequency: "80 MHz"
 Upload speed: "115200" # I found only this baudrate is stable for esp-pow device
 ```
 
+# First time flashing
+- Wiring like this picture [Wiring_FTDI_esp-pow](../../hardware/serial-wiring-1.jpg).
+- The `Green` bus will connect to GND, this will make ESP8285 go to firmware upgrade mode.
+    + Reference for ESP8266/ESP8285 boot mode: [link-1](https://github.com/esp8266/esp8266-wiki/wiki/Boot-Process#esp-boot-modes), [link-2](https://github.com/esp8266/esp8266-wiki/wiki/Uploading)
+    + The Espressif code can boot in different modes, selected on power-up based on GPIO pin levels. (MTDO is equivalent to GPIO15).
+
+    | MTDO | GPIO0 | GPIO2 | Mode  | Description
+    |:----:|:-----:|:-----:| ----- | -----------
+    |   L  |   L   |   H   | UART  | Download code from UART
+    |   L  |   H   |   H   | Flash | Boot from SPI Flash
+    |   H  |   x   |   x   | SDIO  | Boot from SD-card
+
+    + To upload to the module, configure the following pins:
+
+    |  Pin   | Level | Description
+    | ------ | ----- | -----------
+    | CH_PD  | High  | Enables the chip
+    | GPIO0  | Low   | Selects UART download
+    | GPIO2  | High  | Selects UART download
+    | GPIO15 | Low   | If availble. Selects UART download
+
+- Open arduino `esp-pow` project. Change the settings like above (may be need to double check the settings, cause arduino project will remember last settings).
+- Click `Upload` button to flash to board.
+
 # mDNS
 - To scan any node device using avahi in Ubuntu:
 

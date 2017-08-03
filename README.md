@@ -5,6 +5,7 @@
     + [Node device code](./software/node-device/node-device.ino)
 
 - To be able to build the example
+
 ```bash
 # Install arduino IDE
 https://arduino.esp8266.vn/basic/install.html
@@ -24,6 +25,7 @@ ln -s <absolute-path-to-WiFiManager> .
 
 # Now the example should be able to build with arduino IDE
 ```
+
 - For more infomation visit:
     + Some more tips to debug with esp8266 arduino firmware: [tips](./software/tips.md)
     + Node device development guides and notes: [node-device-notes](./software/node-device/node-device-notes.md)

@@ -37,6 +37,9 @@ const char* ssid      = "zealot-wifi";
 const char* password  = "pastebin309";
 ESP8266WebServer server(80);
 
+bool relay_on         = false;
+int last_check        = 0;
+
 // When using interrupts we have to call the library entry point
 // whenever an interrupt is triggered
 void hlw8012_cf1_interrupt() {
@@ -53,9 +56,14 @@ void setInterrupts() {
 }
 
 void handleRoot() {
-  LED_OFF();
   server.send(200, "text/plain", "hello from esp8266!");
-  LED_ON();
+  if (relay_on == false) {
+    relay_on = true;
+    RELAY_ON();
+  } else {
+    relay_on = false;
+    RELAY_OFF();
+  }
 }
 
 void handleNotFound(){
@@ -98,6 +106,7 @@ void setup() {
 
   //set led pin as output
   pinMode(PIN_LED, OUTPUT);
+  pinMode(PIN_RELAY, OUTPUT);
 
   ArduinoOTA.setPort(OTA_PORT);
   ArduinoOTA.setPassword(OTA_PASS);
@@ -131,9 +140,6 @@ void setup() {
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
 }
-
-bool relay_on = false;
-int last_check = 0;
 
 void loop() {
   // put your main code here, to run repeatedly:

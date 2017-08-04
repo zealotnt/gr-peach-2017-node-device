@@ -1,12 +1,3 @@
-# Notes
-- The firmware should be config like this in ArduinoIDE:
-```
-Tools -> Boards: "Generic ESP8285 Module"
-Flash Size: 1M (64K SPIFFS)
-CPU Frequency: "80 MHz"
-Upload speed: "115200" # I found only this baudrate is stable for esp-pow device
-```
-
 # First time flashing
 - Wiring like this picture [Wiring_FTDI_esp-pow](../../hardware/serial-wiring-1.jpg).
 - The `Green` bus will connect to GND, this will make ESP8285 go to firmware upgrade mode.
@@ -39,6 +30,7 @@ $ avahi-browse --all -v -r
 ```
 
 - Result look like this
+
 ```
 Server version: avahi 0.6.32-rc; Host name: Probook.local
 E Ifce Prot Name                                          Type                 Domain
@@ -52,7 +44,33 @@ E Ifce Prot Name                                          Type                 D
 : Cache exhausted
 ```
 
-# OTA
+# Build and Flash using Makefile
+- To build the firmware
+
+```
+make
+```
+
+- To flash over OTA
+    + The device must be same LAN as the Host machine
+    + The settings in [Makefile](./Makefile) should be correct, especially: `ESP_ADDR` field.
+
+```
+make ota
+```
+
+# Behind the scene
+
+### Build the firmware using `Arduino IDE`
+- The firmware should be config like this in ArduinoIDE:
+```
+Tools -> Boards: "Generic ESP8285 Module"
+Flash Size: 1M (64K SPIFFS)
+CPU Frequency: "80 MHz"
+Upload speed: "115200" # I found only this baudrate is stable for esp-pow device
+```
+
+### OTA using `espota` tool
 
 ```bash
 # Get espota tool

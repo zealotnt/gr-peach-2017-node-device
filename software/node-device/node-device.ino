@@ -5,14 +5,14 @@
 #include <ArduinoOTA.h>
 #include <ESP8266WebServer.h>
 
-#define PIN_LED                         15//3
+#define PIN_LED                         3
 #define PIN_BUTTON                      0
 #define PIN_RELAY                       12
 #define SEL_PIN                         5
 #define CF1_PIN                         13
 #define CF_PIN                          14
 
-#define BUTTON_PRESSED()    (digitalRead(PIN_BUTTON) == 1)
+#define BUTTON_PRESSED()    (digitalRead(PIN_BUTTON) == 0)
 #define LED_ON()            digitalWrite(PIN_LED, HIGH)
 #define LED_OFF()           digitalWrite(PIN_LED, LOW)
 #define LED_TOGGLE()        digitalWrite(PIN_LED, digitalRead(PIN_LED) ^ 0x01)
@@ -56,15 +56,29 @@ void setInterrupts() {
   attachInterrupt(CF_PIN, hlw8012_cf_interrupt, CHANGE);
 }
 
+void ledToggle(uint32_t times, uint32_t delay_ms) {
+  int curLedValue = digitalRead(PIN_LED);
+  while (times--) {
+    LED_TOGGLE();
+    delay(delay_ms/2);
+    LED_TOGGLE();
+    delay(delay_ms/2);
+  }
+  digitalWrite(PIN_LED, curLedValue);
+}
+
 void handleRoot() {
   String relayStatus = (relay_on == true) ? "on" : "off";
-  String returnStr = "{relay_status:\"" + relayStatus + "\"}";
-  server.send(200, "text/plain", returnStr);
+  String buttonStatus = (BUTTON_PRESSED() == true) ? "pressed" : "released";
+  String returnStr = "{\"relay_status\":\"" + relayStatus + "\"" + ","
+    "\"button_status\":\"" + buttonStatus + "\"" +
+    "}";
+  server.send(200, "application/json", returnStr);
 }
 
 void returnError(String errorMsg) {
-  String errorJson = "{error:\"" + errorMsg + "\"}";
-  server.send(401, "text/plain", errorJson);
+  String errorJson = "{\"error\":\"" + errorMsg + "\"}";
+  server.send(401, "application/json", errorJson);
 }
 
 void handleControl() {
@@ -115,6 +129,11 @@ void setup() {
   Serial.begin(115200);
   Serial.println("\r\nBooting");
 
+  //set led pin as output
+  pinMode(PIN_LED, OUTPUT);
+  pinMode(PIN_RELAY, OUTPUT);
+  LED_OFF();
+
   WiFi.begin(ssid, password);
   while (WiFi.waitForConnectResult() != WL_CONNECTED) {
     Serial.println("Connection Failed! Rebooting...");
@@ -132,10 +151,6 @@ void setup() {
   server.on("/control", handleControl);
   server.onNotFound(handleNotFound);
   server.begin();
-
-  //set led pin as output
-  pinMode(PIN_LED, OUTPUT);
-  pinMode(PIN_RELAY, OUTPUT);
 
   ArduinoOTA.setPort(OTA_PORT);
   ArduinoOTA.setPassword(OTA_PASS);
@@ -168,6 +183,7 @@ void setup() {
   Serial.println("Ready");
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
+  ledToggle(20, 50);
 }
 
 void loop() {

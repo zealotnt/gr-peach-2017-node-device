@@ -12,11 +12,12 @@
 #define CF1_PIN                         13
 #define CF_PIN                          14
 
-#define LED_ON()      digitalWrite(PIN_LED, HIGH)
-#define LED_OFF()     digitalWrite(PIN_LED, LOW)
-#define LED_TOGGLE()  digitalWrite(PIN_LED, digitalRead(PIN_LED) ^ 0x01)
-#define RELAY_ON()    digitalWrite(PIN_RELAY, HIGH)
-#define RELAY_OFF()   digitalWrite(PIN_RELAY, LOW)
+#define BUTTON_PRESSED()    (digitalRead(PIN_BUTTON) == 1)
+#define LED_ON()            digitalWrite(PIN_LED, HIGH)
+#define LED_OFF()           digitalWrite(PIN_LED, LOW)
+#define LED_TOGGLE()        digitalWrite(PIN_LED, digitalRead(PIN_LED) ^ 0x01)
+#define RELAY_ON()          relay_on = true; digitalWrite(PIN_RELAY, HIGH)
+#define RELAY_OFF()         relay_on = false; digitalWrite(PIN_RELAY, LOW)
 
 #define OTA_PASS "admin"
 #define OTA_PORT (8266)
@@ -56,18 +57,45 @@ void setInterrupts() {
 }
 
 void handleRoot() {
-  server.send(200, "text/plain", "hello from esp8266!");
+  String relayStatus = (relay_on == true) ? "on" : "off";
+  String returnStr = "{relay_status:\"" + relayStatus + "\"}";
+  server.send(200, "text/plain", returnStr);
+}
+
+void returnError(String errorMsg) {
+  String errorJson = "{error:\"" + errorMsg + "\"}";
+  server.send(401, "text/plain", errorJson);
+}
+
+void handleControl() {
+  String wantedArg = "relay";
+  if (!server.hasArg(wantedArg)) {
+    returnError("relay is required");
+    return;
+  }
+
+  if (server.arg(wantedArg) == "on") {
+    RELAY_ON();
+  } else if (server.arg(wantedArg) == "off") {
+    RELAY_OFF();
+  } else {
+    returnError("Unrecognize relay value: " + server.arg(wantedArg));
+    return;
+  }
+
+  handleRoot();
+}
+
+void handleToggle() {
   if (relay_on == false) {
-    relay_on = true;
     RELAY_ON();
   } else {
-    relay_on = false;
     RELAY_OFF();
   }
+  handleRoot();
 }
 
 void handleNotFound(){
-  LED_OFF();
   String message = "File Not Found\n\n";
   message += "URI: ";
   message += server.uri();
@@ -80,7 +108,6 @@ void handleNotFound(){
     message += " " + server.argName(i) + ": " + server.arg(i) + "\n";
   }
   server.send(404, "text/plain", message);
-  LED_ON();
 }
 
 void setup() {
@@ -101,6 +128,8 @@ void setup() {
   }
 
   server.on("/", handleRoot);
+  server.on("/toggle", handleToggle);
+  server.on("/control", handleControl);
   server.onNotFound(handleNotFound);
   server.begin();
 

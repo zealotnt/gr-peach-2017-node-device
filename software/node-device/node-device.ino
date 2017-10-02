@@ -39,7 +39,6 @@ const char* password  = "pastebin309";
 ESP8266WebServer server(80);
 
 bool relay_on         = false;
-int last_check        = 0;
 
 // When using interrupts we have to call the library entry point
 // whenever an interrupt is triggered
@@ -54,6 +53,27 @@ void hlw8012_cf_interrupt() {
 void setInterrupts() {
   attachInterrupt(CF1_PIN, hlw8012_cf1_interrupt, CHANGE);
   attachInterrupt(CF_PIN, hlw8012_cf_interrupt, CHANGE);
+}
+
+bool isButtonPressed() {
+  if (BUTTON_PRESSED()) {
+    delay(200);
+    if (BUTTON_PRESSED()) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// return true if hold a button more than x_sec
+bool isButtonPressedXSec(int x_sec) {
+  static int lastPress = 0;
+  if (millis() - lastPress > x_sec*1000 && digitalRead(PIN_BUTTON) == 0) {
+    return true;
+  } else if (digitalRead(PIN_BUTTON) == 1) {
+    lastPress = millis();
+  }
+  return false;
 }
 
 void ledToggle(uint32_t times, uint32_t delay_ms) {
@@ -189,15 +209,17 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
 
+  if (isButtonPressed()) {
+    if (relay_on == false) {
+      RELAY_ON();
+    } else {
+      RELAY_OFF();
+    }
+  }
+
   if (WiFi.status() == WL_CONNECTED) {
     ArduinoOTA.handle();
     server.handleClient();
-  }
-
-  if (millis() - last_check > 10000) {
-    Serial.printf("Time: %d - IP address: ", last_check);
-    last_check = millis();
-    Serial.println(WiFi.localIP());
   }
 
   if (Serial.read() != -1) {

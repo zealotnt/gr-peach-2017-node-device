@@ -8,11 +8,17 @@ SKETCH      := node-device.ino
 BOARD       := esp8285
 FLASH_DEF   := 1M64
 
+########################################
 # OTA parameters
+########################################
+# White wire
 ESP_ADDR    ?= esp8266-8109ea.local
+# Or
+# Red wire
 # ESP_ADDR    ?= esp8266-810ab8.local
 ESP_PORT    ?= 8266
 ESP_PWD     ?= admin
+########################################
 
 # Include the makeEspArduino Makefile
 include $(HOME)/workspace_esp/makeEspArduino/makeEspArduino.mk

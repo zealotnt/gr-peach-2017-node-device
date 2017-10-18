@@ -11,10 +11,10 @@ FLASH_DEF   := 1M64
 ########################################
 # OTA parameters
 ########################################
-# White wire
+# Red wire
 ESP_ADDR    ?= esp8266-8109ea.local
 # Or
-# Red wire
+# White wire
 # ESP_ADDR    ?= esp8266-810ab8.local
 ESP_PORT    ?= 8266
 ESP_PWD     ?= admin

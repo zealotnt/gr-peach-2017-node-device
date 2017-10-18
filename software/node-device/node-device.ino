@@ -4,6 +4,7 @@
 #include <WiFiUdp.h>
 #include <ArduinoOTA.h>
 #include <ESP8266WebServer.h>
+#include <Ticker.h>
 
 #define PIN_LED                         3
 #define PIN_BUTTON                      0
@@ -12,12 +13,24 @@
 #define CF1_PIN                         13
 #define CF_PIN                          14
 
+#define LED_WIFI_CONNECTING_TICK_FREQ         0.25
+
+#define LED_RELAY_STATUS_TICK_FREQ            1       // 1s freq
+#define LED_RELAY_STATUS_OFF_TIME             4       // the led is off for 4s
+#define LED_RELAY_STATUS_BLINK_PERIOD         5       // 5s period of led blinking pattern
+
 #define BUTTON_PRESSED()    (digitalRead(PIN_BUTTON) == 0)
 #define LED_ON()            digitalWrite(PIN_LED, HIGH)
 #define LED_OFF()           digitalWrite(PIN_LED, LOW)
 #define LED_TOGGLE()        digitalWrite(PIN_LED, digitalRead(PIN_LED) ^ 0x01)
-#define RELAY_ON()          relay_on = true; digitalWrite(PIN_RELAY, HIGH)
-#define RELAY_OFF()         relay_on = false; digitalWrite(PIN_RELAY, LOW)
+
+#define RELAY_ON()          ticker.detach(); \
+                            relay_on = true; \
+                            LED_ON(); \
+                            digitalWrite(PIN_RELAY, HIGH)
+#define RELAY_OFF(isBlink)  if (isBlink) {ticker.attach(LED_RELAY_STATUS_TICK_FREQ, ledBlinkTick);}\
+                            relay_on = false; \
+                            digitalWrite(PIN_RELAY, LOW)
 
 #define OTA_PASS "admin"
 #define OTA_PORT (8266)
@@ -39,6 +52,25 @@ const char* password  = "pastebin309";
 ESP8266WebServer server(80);
 
 bool relay_on         = false;
+
+Ticker ticker;
+
+void ledBlinkTick()
+{
+  static uint8_t tickTimes = 0;
+  tickTimes ++;
+
+  if (tickTimes % LED_RELAY_STATUS_BLINK_PERIOD < LED_RELAY_STATUS_OFF_TIME) {
+    digitalWrite(PIN_LED, 0);
+  } else {
+    digitalWrite(PIN_LED, 1);
+  }
+}
+
+void ledWifiConnectingTick()
+{
+  LED_TOGGLE();
+}
 
 // When using interrupts we have to call the library entry point
 // whenever an interrupt is triggered
@@ -90,8 +122,13 @@ void ledToggle(uint32_t times, uint32_t delay_ms) {
 void handleRoot() {
   String relayStatus = (relay_on == true) ? "on" : "off";
   String buttonStatus = (BUTTON_PRESSED() == true) ? "pressed" : "released";
-  String returnStr = "{\"relay_status\":\"" + relayStatus + "\"" + ","
-    "\"button_status\":\"" + buttonStatus + "\"" +
+  String returnStr = "{\"relay_status\":\"" + relayStatus + "\","
+    "\"button_status\":\"" + buttonStatus + "\","
+    "\"voltage:\"" + hlw8012.getVoltage() + "\","
+    "\"current:\"" + hlw8012.getCurrent() + "\","
+    "\"active_power:\"" + hlw8012.getActivePower() + "\","
+    "\"apparent_power:\"" + hlw8012.getApparentPower() + "\","
+    "\"power_factor:\"" + 100*hlw8012.getPowerFactor() + "\""
     "}";
   server.send(200, "application/json", returnStr);
 }
@@ -111,7 +148,7 @@ void handleControl() {
   if (server.arg(wantedArg) == "on") {
     RELAY_ON();
   } else if (server.arg(wantedArg) == "off") {
-    RELAY_OFF();
+    RELAY_OFF(true);
   } else {
     returnError("Unrecognize relay value: " + server.arg(wantedArg));
     return;
@@ -124,7 +161,7 @@ void handleToggle() {
   if (relay_on == false) {
     RELAY_ON();
   } else {
-    RELAY_OFF();
+    RELAY_OFF(true);
   }
   handleRoot();
 }
@@ -152,14 +189,20 @@ void setup() {
   //set led pin as output
   pinMode(PIN_LED, OUTPUT);
   pinMode(PIN_RELAY, OUTPUT);
+  pinMode(PIN_BUTTON, INPUT_PULLUP);
   LED_OFF();
+  RELAY_OFF(false);
 
+  // tick indicate that we are connecting to wifi
+  ticker.attach(LED_WIFI_CONNECTING_TICK_FREQ, ledWifiConnectingTick);
   WiFi.begin(ssid, password);
   while (WiFi.waitForConnectResult() != WL_CONNECTED) {
     Serial.println("Connection Failed! Rebooting...");
     delay(5000);
     ESP.restart();
   }
+  // already connected, stop tick
+  ticker.detach();
 
   // ("esp8266_" + String(ESP.getChipId())).c_str())
   if (MDNS.begin(("esp8266_" + String(ESP.getChipId())).c_str())) {
@@ -194,16 +237,16 @@ void setup() {
   });
   ArduinoOTA.begin();
 
-  LED_ON();
-  RELAY_ON();
   hlw8012.begin(CF_PIN, CF1_PIN, SEL_PIN, CURRENT_MODE, true);
   hlw8012.setResistors(CURRENT_RESISTOR, VOLTAGE_RESISTOR_UPSTREAM, VOLTAGE_RESISTOR_DOWNSTREAM);
   setInterrupts();
+  LED_OFF();
 
   Serial.println("Ready");
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
   ledToggle(20, 50);
+  RELAY_OFF(true);
 }
 
 void loop() {
@@ -213,7 +256,7 @@ void loop() {
     if (relay_on == false) {
       RELAY_ON();
     } else {
-      RELAY_OFF();
+      RELAY_OFF(true);
     }
   }
 

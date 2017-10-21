@@ -78,3 +78,15 @@ wget https://raw.githubusercontent.com/esp8266/Arduino/master/tools/espota.py
 # Esp ota command to load firmware to esp-pow
 python espota.py -d -i <ip-of-esp-pow> -p 8266 -P 8266 -a admin -f <path-to-ino-bin>
 ```
+
+# Debug exception of ESP8266 Arduino code
+- Story: When I was working with wifiManager, and try to erase the wifi config of esp8266 (to force it goes to config mode when restart), it always cause exception, and the wifi config still there
+- There is a easy way to debug exception, the ingredient:
+    + Arduino IDE
+    + [Exception debugger plugin](https://github.com/me-no-dev/EspExceptionDecoder)
+    + espota.py
+- Step by step:
+    + Install stack exception debugger plugin (I'm using Arduino 1.6.13, older version may not work)
+    + Open and build sketch.
+    + If not using serial to download firmware, may use the espota to ugprade the firmware, with the syntax described above. The firmware is showed in console build log of Arduino IDE, like: `/tmp/arduino_build_849924/node-device.ino.bin`
+        * May need enable: `File` -> `Preferences` -> `Show verbose output when compile`

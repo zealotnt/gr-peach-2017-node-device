@@ -1,10 +1,19 @@
 #include <HLW8012.h>              //https://bitbucket.org/xoseperez/hlw8012
 #include <ESP8266WiFi.h>          //https://github.com/esp8266/Arduino
 #include <ESP8266mDNS.h>
+#include <DNSServer.h>
+#include <WiFiManager.h>          //https://github.com/tzapu/WiFiManager
 #include <WiFiUdp.h>
 #include <ArduinoOTA.h>
 #include <ESP8266WebServer.h>
 #include <Ticker.h>
+
+enum buttonPressState_t
+{
+  STATE_RELEASE,
+  STATE_DOWN,
+  STATE_WAIT_FOR_UP,
+};
 
 #define PIN_LED                         3
 #define PIN_BUTTON                      0
@@ -13,7 +22,8 @@
 #define CF1_PIN                         13
 #define CF_PIN                          14
 
-#define LED_WIFI_CONNECTING_TICK_FREQ         0.25
+#define LED_WIFI_CONNECTING_TICK_FREQ         0.4
+#define LED_WIFI_MANAGER_TICK_FREQ            0.15
 
 #define LED_RELAY_STATUS_TICK_FREQ            1       // 1s freq
 #define LED_RELAY_STATUS_OFF_TIME             4       // the led is off for 4s
@@ -82,19 +92,17 @@ void hlw8012_cf_interrupt() {
 }
 
 // Library expects an interrupt on both edges
-void setInterrupts() {
+void setInterruptsPowerMeasure() {
   attachInterrupt(CF1_PIN, hlw8012_cf1_interrupt, CHANGE);
   attachInterrupt(CF_PIN, hlw8012_cf_interrupt, CHANGE);
 }
 
-// return true if hold a button more than x_sec
-typedef enum
-{
-  STATE_RELEASE,
-  STATE_DOWN,
-  STATE_WAIT_FOR_UP,
-} buttonPressState_t;
+void disableInterruptPowerMeasure() {
+  detachInterrupt(CF1_PIN);
+  detachInterrupt(CF_PIN);
+}
 
+// return true if hold a button more than x_sec
 bool isButtonPressedXMSec(int x_msec, int *lastPress, buttonPressState_t *state) {
   int buttonStatus = digitalRead(PIN_BUTTON);
 
@@ -130,6 +138,22 @@ bool isButtonPressed() {
   static buttonPressState_t state = STATE_RELEASE;
 
   return isButtonPressedXMSec(200, &lastPress, &state);
+}
+
+void eraseWifiConfig() {
+  disableInterruptPowerMeasure();
+  WiFi.softAPdisconnect(true);
+  WiFi.disconnect(true);
+
+  ESP.eraseConfig();
+  ESP.reset();
+}
+
+bool isLongPress() {
+  static int lastPress = 0;
+  static buttonPressState_t state = STATE_RELEASE;
+
+  return isButtonPressedXMSec(5000, &lastPress, &state);
 }
 
 
@@ -206,6 +230,35 @@ void handleNotFound(){
   server.send(404, "text/plain", message);
 }
 
+//gets called when WiFiManager enters configuration mode
+void configModeCallback (WiFiManager *myWiFiManager) {
+  Serial.println("Entered config mode");
+  Serial.println(WiFi.softAPIP());
+  //if you used auto generated SSID, print it
+  Serial.println(myWiFiManager->getConfigPortalSSID());
+  //entered config mode, make led toggle faster
+  ticker.attach(LED_WIFI_MANAGER_TICK_FREQ, ledWifiConnectingTick);
+}
+
+void waitForWifiConnection() {
+  //WiFiManager
+  //Local intialization. Once its business is done, there is no need to keep it around
+  WiFiManager wifiManager;
+
+  // tick indicate that we are connecting to wifi
+  ticker.attach(LED_WIFI_CONNECTING_TICK_FREQ, ledWifiConnectingTick);
+
+  //set callback that gets called when connecting to previous WiFi fails, and enters Access Point mode
+  wifiManager.setAPCallback(configModeCallback);
+
+  if (!wifiManager.autoConnect()) {
+    ESP.reset();
+    delay(1000);
+  }
+  // already connected, stop tick
+  ticker.detach();
+}
+
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
@@ -218,16 +271,7 @@ void setup() {
   LED_OFF();
   RELAY_OFF(false);
 
-  // tick indicate that we are connecting to wifi
-  ticker.attach(LED_WIFI_CONNECTING_TICK_FREQ, ledWifiConnectingTick);
-  WiFi.begin(ssid, password);
-  while (WiFi.waitForConnectResult() != WL_CONNECTED) {
-    Serial.println("Connection Failed! Rebooting...");
-    delay(5000);
-    ESP.restart();
-  }
-  // already connected, stop tick
-  ticker.detach();
+  waitForWifiConnection();
 
   // ("esp8266_" + String(ESP.getChipId())).c_str())
   if (MDNS.begin(("esp8266_" + String(ESP.getChipId())).c_str())) {
@@ -264,7 +308,7 @@ void setup() {
 
   hlw8012.begin(CF_PIN, CF1_PIN, SEL_PIN, CURRENT_MODE, true);
   hlw8012.setResistors(CURRENT_RESISTOR, VOLTAGE_RESISTOR_UPSTREAM, VOLTAGE_RESISTOR_DOWNSTREAM);
-  setInterrupts();
+  setInterruptsPowerMeasure();
   LED_OFF();
 
   Serial.println("Ready");
@@ -283,6 +327,12 @@ void loop() {
     } else {
       RELAY_OFF(true);
     }
+  }
+
+  if (isLongPress()) {
+    Serial.println("Removing the old wifi config");
+    eraseWifiConfig();
+    system_restart();
   }
 
   if (WiFi.status() == WL_CONNECTED) {

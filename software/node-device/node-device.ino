@@ -87,26 +87,51 @@ void setInterrupts() {
   attachInterrupt(CF_PIN, hlw8012_cf_interrupt, CHANGE);
 }
 
-bool isButtonPressed() {
-  if (BUTTON_PRESSED()) {
-    delay(200);
-    if (BUTTON_PRESSED()) {
-      return true;
-    }
+// return true if hold a button more than x_sec
+typedef enum
+{
+  STATE_RELEASE,
+  STATE_DOWN,
+  STATE_WAIT_FOR_UP,
+} buttonPressState_t;
+
+bool isButtonPressedXMSec(int x_msec, int *lastPress, buttonPressState_t *state) {
+  int buttonStatus = digitalRead(PIN_BUTTON);
+
+  switch (*state)
+  {
+    case STATE_RELEASE:
+      if (buttonStatus == 0) {
+        *lastPress = millis();
+        *state = STATE_DOWN;
+      } else {
+        *state = STATE_RELEASE;
+      }
+      break;
+    case STATE_DOWN:
+      if (millis() - *lastPress > x_msec && buttonStatus == 0) {
+        *state = STATE_WAIT_FOR_UP;
+        return true;
+      } else if (buttonStatus == 1) {
+        *state = STATE_RELEASE;
+      }
+    case STATE_WAIT_FOR_UP:
+      if (buttonStatus == 1) {
+        *state = STATE_RELEASE;
+      }
+    default:
+      break;
   }
   return false;
 }
 
-// return true if hold a button more than x_sec
-bool isButtonPressedXSec(int x_sec) {
+bool isButtonPressed() {
   static int lastPress = 0;
-  if (millis() - lastPress > x_sec*1000 && digitalRead(PIN_BUTTON) == 0) {
-    return true;
-  } else if (digitalRead(PIN_BUTTON) == 1) {
-    lastPress = millis();
-  }
-  return false;
+  static buttonPressState_t state = STATE_RELEASE;
+
+  return isButtonPressedXMSec(200, &lastPress, &state);
 }
+
 
 void ledToggle(uint32_t times, uint32_t delay_ms) {
   int curLedValue = digitalRead(PIN_LED);

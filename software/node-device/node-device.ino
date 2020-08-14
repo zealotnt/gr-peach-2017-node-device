@@ -172,6 +172,7 @@ void handleRoot() {
   String relayStatus = (relay_on == true) ? "on" : "off";
   String buttonStatus = (BUTTON_PRESSED() == true) ? "pressed" : "released";
   String returnStr = "{\"relay_status\":\"" + relayStatus + "\","
+    "\"mdns:\"" + "esp8266_" + String(ESP.getChipId())).c_str() + "\","
     "\"button_status\":\"" + buttonStatus + "\","
     "\"voltage:\"" + hlw8012.getVoltage() + "\","
     "\"current:\"" + hlw8012.getCurrent() + "\","
@@ -224,6 +225,9 @@ void handleNotFound(){
   message += "\nArguments: ";
   message += server.args();
   message += "\n";
+  message += "usage:";
+  message += "\t/toggle\n";
+  message += "\t/control?relay=on\n"
   for (uint8_t i=0; i<server.args(); i++){
     message += " " + server.argName(i) + ": " + server.arg(i) + "\n";
   }

@@ -21,4 +21,4 @@ ESP_PWD     ?= admin
 ########################################
 
 # Include the makeEspArduino Makefile
-include $(HOME)/workspace_esp/makeEspArduino/makeEspArduino.mk
+include $(HOME)/workspace_mine/makeEspArduino/makeEspArduino.mk

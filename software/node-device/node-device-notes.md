@@ -45,6 +45,14 @@ E Ifce Prot Name                                          Type                 D
 ```
 
 # Build and Flash using Makefile
+- Helpers
+
+```
+make help # to show all options, incase we need other function, eg:
+make erase_flash # erase all flash
+make flash # flash using tty session
+```
+
 - To build the firmware
 
 ```

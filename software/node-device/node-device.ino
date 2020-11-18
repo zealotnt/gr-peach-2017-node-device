@@ -6,7 +6,8 @@
 #include <WiFiUdp.h>
 #include <ArduinoOTA.h>
 #include <ESP8266WebServer.h>
-#include <Ticker.h>
+#include <Ticker.h>               //https://github.com/esp8266/Arduino/blob/master/libraries/Ticker/src/Ticker.h
+#include "uptime_formatter.h"     //https://github.com/YiannisBourkelis/Uptime-Library
 
 enum buttonPressState_t
 {
@@ -22,8 +23,9 @@ enum buttonPressState_t
 #define CF1_PIN                         13
 #define CF_PIN                          14
 
-#define LED_WIFI_CONNECTING_TICK_FREQ         0.4
-#define LED_WIFI_MANAGER_TICK_FREQ            0.15
+#define LED_WIFI_CONNECTING_TICK_PERIOD       0.4
+#define LED_WIFI_MANAGER_TICK_PERIOD          0.15
+#define SERIAL_WIFI_MANAGER_TICK_PERIOD       5
 
 #define LED_RELAY_STATUS_TICK_FREQ            1       // 1s freq
 #define LED_RELAY_STATUS_OFF_TIME             4       // the led is off for 4s
@@ -34,11 +36,11 @@ enum buttonPressState_t
 #define LED_OFF()           digitalWrite(PIN_LED, LOW)
 #define LED_TOGGLE()        digitalWrite(PIN_LED, digitalRead(PIN_LED) ^ 0x01)
 
-#define RELAY_ON()          ticker.detach(); \
+#define RELAY_ON()          tickerLed.detach(); \
                             relay_on = true; \
                             LED_ON(); \
                             digitalWrite(PIN_RELAY, HIGH)
-#define RELAY_OFF(isBlink)  if (isBlink) {ticker.attach(LED_RELAY_STATUS_TICK_FREQ, ledBlinkTick);}\
+#define RELAY_OFF(isBlink)  if (isBlink) {tickerLed.attach(LED_RELAY_STATUS_TICK_FREQ, ledBlinkTick);}\
                             relay_on = false; \
                             digitalWrite(PIN_RELAY, LOW)
 
@@ -63,7 +65,8 @@ ESP8266WebServer server(80);
 
 bool relay_on         = false;
 
-Ticker ticker;
+Ticker tickerLed;
+Ticker tickerSerial;
 
 void ledBlinkTick()
 {
@@ -75,6 +78,10 @@ void ledBlinkTick()
   } else {
     digitalWrite(PIN_LED, 1);
   }
+}
+
+void printUpTime() {
+  Serial.println("up " + uptime_formatter::getUptime());
 }
 
 void ledWifiConnectingTick()
@@ -175,6 +182,7 @@ void handleRoot() {
   String relayStatus = (relay_on == true) ? "on" : "off";
   String buttonStatus = (BUTTON_PRESSED() == true) ? "pressed" : "released";
   String returnStr = "{\"relay_status\":\"" + relayStatus + "\","
+    "\"uptime:\"" + uptime_formatter::getUptime() + "\","
     "\"mdns:\"" + "esp8266_" + String(ESP.getChipId()).c_str() + "\","
     "\"button_status\":\"" + buttonStatus + "\","
     /* "\"voltage:\"" + hlw8012.getVoltage() + "\"," */
@@ -201,7 +209,7 @@ void handleControl() {
   if (server.arg(wantedArg) == "on") {
     RELAY_ON();
   } else if (server.arg(wantedArg) == "off") {
-    RELAY_OFF(true);
+    RELAY_OFF(false);
   } else {
     returnError("Unrecognize relay value: " + server.arg(wantedArg));
     return;
@@ -214,7 +222,7 @@ void handleToggle() {
   if (relay_on == false) {
     RELAY_ON();
   } else {
-    RELAY_OFF(true);
+    RELAY_OFF(false);
   }
   handleRoot();
 }
@@ -244,7 +252,12 @@ void configModeCallback (WiFiManager *myWiFiManager) {
   //if you used auto generated SSID, print it
   Serial.println(myWiFiManager->getConfigPortalSSID());
   //entered config mode, make led toggle faster
-  ticker.attach(LED_WIFI_MANAGER_TICK_FREQ, ledWifiConnectingTick);
+
+  // which will wait 3 minutes (180 seconds). When the time passes, the autoConnect function will return
+  myWiFiManager->setConfigPortalTimeout(180);
+
+  tickerLed.attach(LED_WIFI_MANAGER_TICK_PERIOD, ledWifiConnectingTick);
+  tickerSerial.attach(SERIAL_WIFI_MANAGER_TICK_PERIOD, printUpTime);
 }
 
 void waitForWifiConnection() {
@@ -253,7 +266,7 @@ void waitForWifiConnection() {
   WiFiManager wifiManager;
 
   // tick indicate that we are connecting to wifi
-  ticker.attach(LED_WIFI_CONNECTING_TICK_FREQ, ledWifiConnectingTick);
+  tickerLed.attach(LED_WIFI_CONNECTING_TICK_PERIOD, ledWifiConnectingTick);
 
   //set callback that gets called when connecting to previous WiFi fails, and enters Access Point mode
   wifiManager.setAPCallback(configModeCallback);
@@ -262,8 +275,10 @@ void waitForWifiConnection() {
     ESP.reset();
     delay(1000);
   }
-  // already connected, stop tick
-  ticker.detach();
+
+  // already connected, stop tick, and print serial time
+  tickerLed.detach();
+  tickerSerial.detach();
 }
 
 void setup() {
@@ -349,5 +364,6 @@ void loop() {
   if (Serial.read() != -1) {
     Serial.printf("Receive keystroke: ");
     Serial.println(WiFi.localIP());
+    printUpTime();
   }
 }

@@ -1,4 +1,4 @@
-#include <HLW8012.h>              //https://bitbucket.org/xoseperez/hlw8012
+/* #include <HLW8012.h>              //https://bitbucket.org/xoseperez/hlw8012 */
 #include <ESP8266WiFi.h>          //https://github.com/esp8266/Arduino
 #include <ESP8266mDNS.h>
 #include <DNSServer.h>
@@ -56,7 +56,7 @@ enum buttonPressState_t
 #define VOLTAGE_RESISTOR_UPSTREAM       ( 5 * 470000 ) // Real: 2280k
 #define VOLTAGE_RESISTOR_DOWNSTREAM     ( 950 ) // Real 1.009k
 
-HLW8012 hlw8012;
+/* HLW8012 hlw8012; */
 const char* ssid      = "zealot-wifi";
 const char* password  = "pastebin309";
 ESP8266WebServer server(80);
@@ -85,16 +85,19 @@ void ledWifiConnectingTick()
 // When using interrupts we have to call the library entry point
 // whenever an interrupt is triggered
 void hlw8012_cf1_interrupt() {
-  hlw8012.cf1_interrupt();
+  /* hlw8012.cf1_interrupt(); */
 }
 void hlw8012_cf_interrupt() {
-  hlw8012.cf_interrupt();
+  /* hlw8012.cf_interrupt(); */
 }
 
 // Library expects an interrupt on both edges
 void setInterruptsPowerMeasure() {
-  attachInterrupt(CF1_PIN, hlw8012_cf1_interrupt, CHANGE);
-  attachInterrupt(CF_PIN, hlw8012_cf_interrupt, CHANGE);
+  /* hlw8012.begin(CF_PIN, CF1_PIN, SEL_PIN, CURRENT_MODE, true); */
+  /* hlw8012.setResistors(CURRENT_RESISTOR, VOLTAGE_RESISTOR_UPSTREAM, VOLTAGE_RESISTOR_DOWNSTREAM); */
+
+  /* attachInterrupt(CF1_PIN, hlw8012_cf1_interrupt, CHANGE); */
+  /* attachInterrupt(CF_PIN, hlw8012_cf_interrupt, CHANGE); */
 }
 
 void disableInterruptPowerMeasure() {
@@ -174,11 +177,11 @@ void handleRoot() {
   String returnStr = "{\"relay_status\":\"" + relayStatus + "\","
     "\"mdns:\"" + "esp8266_" + String(ESP.getChipId()).c_str() + "\","
     "\"button_status\":\"" + buttonStatus + "\","
-    "\"voltage:\"" + hlw8012.getVoltage() + "\","
-    "\"current:\"" + hlw8012.getCurrent() + "\","
-    "\"active_power:\"" + hlw8012.getActivePower() + "\","
-    "\"apparent_power:\"" + hlw8012.getApparentPower() + "\","
-    "\"power_factor:\"" + 100*hlw8012.getPowerFactor() + "\""
+    /* "\"voltage:\"" + hlw8012.getVoltage() + "\"," */
+    /* "\"current:\"" + hlw8012.getCurrent() + "\"," */
+    /* "\"active_power:\"" + hlw8012.getActivePower() + "\"," */
+    /* "\"apparent_power:\"" + hlw8012.getApparentPower() + "\"," */
+    /* "\"power_factor:\"" + 100*hlw8012.getPowerFactor() + "\"" */
     "}";
   server.send(200, "application/json", returnStr);
 }
@@ -310,9 +313,8 @@ void setup() {
   });
   ArduinoOTA.begin();
 
-  hlw8012.begin(CF_PIN, CF1_PIN, SEL_PIN, CURRENT_MODE, true);
-  hlw8012.setResistors(CURRENT_RESISTOR, VOLTAGE_RESISTOR_UPSTREAM, VOLTAGE_RESISTOR_DOWNSTREAM);
-  setInterruptsPowerMeasure();
+  /* setInterruptsPowerMeasure(); */
+  disableInterruptPowerMeasure();
   LED_OFF();
 
   Serial.println("Ready");

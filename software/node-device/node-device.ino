@@ -40,7 +40,9 @@ enum buttonPressState_t
                             relay_on = true; \
                             LED_ON(); \
                             digitalWrite(PIN_RELAY, HIGH)
-#define RELAY_OFF(isBlink)  if (isBlink) {tickerLed.attach(LED_RELAY_STATUS_TICK_FREQ, ledBlinkTick);}\
+#define RELAY_OFF(isBlink)  LED_OFF();\
+                            if (isBlink)\
+                              {tickerLed.attach(LED_RELAY_STATUS_TICK_FREQ, ledBlinkTick);} \
                             relay_on = false; \
                             digitalWrite(PIN_RELAY, LOW)
 

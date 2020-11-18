@@ -14,12 +14,15 @@ FLASH_DEF   := 1M64
 ########################################
 # OTA parameters
 ########################################
-# Red wire
+# Red wire // room light
 ESP_ADDR    ?= 192.168.31.232
 OTA_ADDR    ?= 192.168.31.232
 # Or
-# White wire
-# ESP_ADDR    ?= esp8266-810ab8.local
+# White wire // balcony light
+# ESP_ADDR    ?= 192.168.31.159
+# OTA_ADDR    ?= 192.168.31.159
+
+# OTA credential
 ESP_PORT    ?= 8266
 OTA_PORT    ?= 8266
 ESP_PWD     ?= admin
